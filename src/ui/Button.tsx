@@ -43,6 +43,16 @@ export interface ButtonProps {
   download?: boolean;
   /** Where the label alone is not the accessible name, or there is no visible label. */
   ariaLabel?: string;
+  /**
+   * For a disclosure control -- a Details toggle, a collapsing panel header.
+   *
+   * Without it the arrow glyph is the only indication of state, which is finding 08 in
+   * miniature: a control whose meaning is carried entirely by a `▶`. Setting it also makes
+   * the button announce as expanded or collapsed rather than as a plain button.
+   */
+  ariaExpanded?: boolean;
+  /** The id of the region this control discloses, where there is one. */
+  ariaControls?: string;
   /** Fills the width of its container -- for a single action at the foot of a card. */
   block?: boolean;
   type?: 'button' | 'submit';
@@ -96,6 +106,8 @@ export function Button({
   href,
   download,
   ariaLabel,
+  ariaExpanded,
+  ariaControls,
   block = false,
   type = 'button',
   title,
@@ -151,6 +163,8 @@ export function Button({
       disabled={disabled}
       style={style}
       aria-label={ariaLabel}
+      aria-expanded={ariaExpanded}
+      aria-controls={ariaControls}
       title={title}
       {...handlers}
     >

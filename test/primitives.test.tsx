@@ -7,6 +7,8 @@ import { Button } from '../src/ui/Button';
 import { DialogHost, useDialogs } from '../src/ui/Dialog';
 import { EmptyState } from '../src/ui/EmptyState';
 import { Field, TextInput } from '../src/ui/Field';
+import { Readout } from '../src/ui/Readout';
+import { Section } from '../src/ui/Section';
 import { tokens } from '../src/tokens';
 
 /*
@@ -245,6 +247,77 @@ describe('Badge', () => {
     // records, and the reason the ENABLED pill keeps its text.
     render(<Badge role="ok">Enabled</Badge>);
     expect(screen.getByText('Enabled')).toBeTruthy();
+  });
+});
+
+describe('Section', () => {
+  it('is one control, in one place, in both states', async () => {
+    // Finding 08: ConfigurationPanel offered a `▶` glyph collapsed and a bordered
+    // "Collapse" button in the opposite corner when expanded. One control, so there is
+    // exactly one button either way.
+    render(
+      <Section title="Boilers" defaultOpen={false}>
+        <p>body</p>
+      </Section>
+    );
+
+    const header = screen.getByRole('button', { name: /Boilers/ });
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+
+    fireEvent.click(header);
+    expect(await screen.findByText('body')).toBeTruthy();
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+  });
+
+  it('announces whether it is open, rather than only drawing an arrow', () => {
+    render(
+      <Section title="Boilers" defaultOpen={false}>
+        <p>body</p>
+      </Section>
+    );
+
+    const header = screen.getByRole('button', { name: /Boilers/ });
+    expect(header.getAttribute('aria-expanded')).toBe('false');
+    // And it says what it governs.
+    const controls = header.getAttribute('aria-controls');
+    expect(controls).toBeTruthy();
+
+    fireEvent.click(header);
+    expect(header.getAttribute('aria-expanded')).toBe('true');
+    expect(document.getElementById(controls!)?.textContent).toBe('body');
+  });
+
+  it('unmounts the body when collapsed', () => {
+    // These panels hold readouts fed by a 5 Hz status push. Hiding rather than unmounting
+    // keeps re-rendering cards nobody is looking at.
+    render(
+      <Section title="Boilers" defaultOpen={false}>
+        <p>body</p>
+      </Section>
+    );
+    expect(screen.queryByText('body')).toBeNull();
+  });
+});
+
+describe('Readout', () => {
+  it('renders changing figures in the mono face with tabular numerals', () => {
+    // The system's own rule, which the machine screens did not follow: a value that
+    // updates at 1 Hz through 99.9 -> 100.0 changes width in a proportional face and drags
+    // the row with it.
+    const { container } = render(<Readout label="Temperature" value="93.3" unit="°C" />);
+    const value = container.querySelectorAll('span')[1] as HTMLSpanElement;
+
+    // Quote-normalised: jsdom re-serialises the stack's `'SF Mono'` as `"SF Mono"`, so a
+    // string equality here compares CSS serialisation rather than the font that was set.
+    const normalise = (s: string) => s.replace(/["']/g, '');
+    expect(normalise(value.style.fontFamily)).toBe(normalise(tokens.font.mono));
+    expect(value.style.fontVariantNumeric).toBe('tabular-nums');
+  });
+
+  it('does not put a colon in the label', () => {
+    // 74 labels ended in one. Two columns already say which side is which.
+    const { container } = render(<Readout label="Output" value="35.0" unit="%" />);
+    expect(container.textContent).not.toContain(':');
   });
 });
 

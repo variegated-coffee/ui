@@ -22,6 +22,12 @@ export type { AlertProps } from './ui/Alert';
 export { Badge } from './ui/Badge';
 export type { BadgeProps } from './ui/Badge';
 
+export { Section } from './ui/Section';
+export type { SectionProps } from './ui/Section';
+
+export { Readout, ReadoutGroup } from './ui/Readout';
+export type { ReadoutProps } from './ui/Readout';
+
 export { EmptyState } from './ui/EmptyState';
 export type { EmptyStateProps } from './ui/EmptyState';
 
