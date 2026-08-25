@@ -31,8 +31,13 @@ export type { TabDefinition, TabsProps } from './ui/Tabs';
 export { Section } from './ui/Section';
 export type { SectionProps } from './ui/Section';
 
-export { Readout, ReadoutGroup } from './ui/Readout';
-export type { ReadoutProps } from './ui/Readout';
+/*
+ * `Reading`, not `Readout` -- the shot page's `Readout` (the panel of every pen's current
+ * value) already owns that name in the design system, and two different components sharing
+ * one export name is a duplicate identifier in the flat bundle namespace.
+ */
+export { Reading, ReadingGroup } from './ui/Reading';
+export type { ReadingProps } from './ui/Reading';
 
 export { EmptyState } from './ui/EmptyState';
 export type { EmptyStateProps } from './ui/EmptyState';

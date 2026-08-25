@@ -11,10 +11,18 @@ import { tokens } from '../tokens';
  * `"monospace"` literals scattered through the machine screens are where the intent
  * survived the copy-paste but the token did not.
  *
+ * # Why `Reading` and not `Readout`
+ *
+ * `Readout` was the obvious name and is already taken: the shot page's `Readout` is the
+ * panel listing every pen's current value, and it is the older, user-facing component. Two
+ * different things called `Readout` in one flat bundle namespace is a duplicate export, and
+ * more importantly it is a design system that cannot say which one it means. This is the
+ * singular -- one reading -- and `ReadingGroup` is a stack of them.
+ *
  * Three decisions worth stating, because each was being made differently per screen:
  *
  * - **Monospace with tabular figures, always.** Not a style choice. A boiler temperature
- *   updating at 1 Hz through 99.9 → 100.0 changes width in a proportional face, which
+ *   updating at 1 Hz through 99.9 -> 100.0 changes width in a proportional face, which
  *   drags the whole row. `tokens.font.mono` and `tabular-nums` together fix the column.
  * - **No trailing colon.** Two columns with the label left and the value right already say
  *   which is which; the colon is punctuation for a sentence this is not. Dropping it also
@@ -24,7 +32,7 @@ import { tokens } from '../tokens';
  *   figure and `°C` as its unit -- and so a column of them aligns on the number rather
  *   than on the end of the string.
  */
-export interface ReadoutProps {
+export interface ReadingProps {
   label: string;
   /** Pre-formatted. This decides how it *looks*, never how many decimals it has. */
   value: string;
@@ -35,7 +43,7 @@ export interface ReadoutProps {
   emphasis?: boolean;
 }
 
-export function Readout({ label, value, unit, size = 'md', emphasis = false }: ReadoutProps) {
+export function Reading({ label, value, unit, size = 'md', emphasis = false }: ReadingProps) {
   const scale = size === 'sm' ? '0.8rem' : '0.9rem';
 
   return (
@@ -68,12 +76,12 @@ export function Readout({ label, value, unit, size = 'md', emphasis = false }: R
 }
 
 /**
- * A stack of `Readout`s, with the spacing decided once.
+ * A stack of `Reading`s, with the spacing decided once.
  *
  * Exists because the alternative is every card declaring the same flex column, and three
  * of them declaring a slightly different gap.
  */
-export function ReadoutGroup({
+export function ReadingGroup({
   title,
   children,
 }: {

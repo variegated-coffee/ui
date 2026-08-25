@@ -7,7 +7,7 @@ import { Button } from '../src/ui/Button';
 import { DialogHost, useDialogs } from '../src/ui/Dialog';
 import { EmptyState } from '../src/ui/EmptyState';
 import { Field, TextInput } from '../src/ui/Field';
-import { Readout } from '../src/ui/Readout';
+import { Reading } from '../src/ui/Reading';
 import { Section } from '../src/ui/Section';
 import { Select } from '../src/ui/Select';
 import { Tabs } from '../src/ui/Tabs';
@@ -445,12 +445,12 @@ describe('Section', () => {
   });
 });
 
-describe('Readout', () => {
+describe('Reading', () => {
   it('renders changing figures in the mono face with tabular numerals', () => {
     // The system's own rule, which the machine screens did not follow: a value that
     // updates at 1 Hz through 99.9 -> 100.0 changes width in a proportional face and drags
     // the row with it.
-    const { container } = render(<Readout label="Temperature" value="93.3" unit="°C" />);
+    const { container } = render(<Reading label="Temperature" value="93.3" unit="°C" />);
     const value = container.querySelectorAll('span')[1] as HTMLSpanElement;
 
     // Quote-normalised: jsdom re-serialises the stack's `'SF Mono'` as `"SF Mono"`, so a
@@ -462,7 +462,7 @@ describe('Readout', () => {
 
   it('does not put a colon in the label', () => {
     // 74 labels ended in one. Two columns already say which side is which.
-    const { container } = render(<Readout label="Output" value="35.0" unit="%" />);
+    const { container } = render(<Reading label="Output" value="35.0" unit="%" />);
     expect(container.textContent).not.toContain(':');
   });
 });
