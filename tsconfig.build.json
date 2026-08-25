@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // The whole reason this package exists as a *published* artefact rather than a
+    // workspace sibling: the comms frontend is a separate repository, and Vite does not
+    // transpile TypeScript inside `node_modules`. It needs JS, and its `tsc` step needs
+    // the declarations beside it.
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

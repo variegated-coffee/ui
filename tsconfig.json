@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "lib": ["ES2022", "DOM"],
+    "noEmit": true,
+    // No ambient `types`, for the reason `packages/shot-log` gives: this package is
+    // consumed by a Cloudflare Worker, by a Vite app and by the firmware's own frontend,
+    // so anything it reaches for has to exist in all three. `DOM` is in `lib` because
+    // these are components -- they type `HTMLInputElement` and attach key handlers -- but
+    // reaching for `node:fs` here is still a compile error rather than a review comment.
+    "types": []
+  },
+  "include": ["src", "test", "measure-contrast.mjs"]
+}
