@@ -9,6 +9,8 @@ import { EmptyState } from '../src/ui/EmptyState';
 import { Field, TextInput } from '../src/ui/Field';
 import { Readout } from '../src/ui/Readout';
 import { Section } from '../src/ui/Section';
+import { Select } from '../src/ui/Select';
+import { Tabs } from '../src/ui/Tabs';
 import { tokens } from '../src/tokens';
 
 /*
@@ -138,6 +140,77 @@ describe('TextInput', () => {
   });
 });
 
+describe('Select', () => {
+  it('is labelled through Field like any other control', () => {
+    render(
+      <Field label="Command type">
+        {(control) => (
+          <Select
+            {...control}
+            value="RunRoutine"
+            onChange={() => {}}
+            options={[
+              { value: 'RunRoutine', label: 'Run routine', group: 'Routine' },
+              { value: 'CancelRoutine', label: 'Cancel routine', group: 'Routine' },
+              { value: 'SetMachineMode', label: 'Set machine mode', group: 'Machine' },
+            ]}
+          />
+        )}
+      </Field>
+    );
+
+    const select = screen.getByLabelText('Command type') as HTMLSelectElement;
+    expect(select.tagName).toBe('SELECT');
+    expect(select.value).toBe('RunRoutine');
+  });
+
+  it('groups options in the order they are given', () => {
+    const { container } = render(
+      <Field label="Command type">
+        {(control) => (
+          <Select
+            {...control}
+            value="a"
+            onChange={() => {}}
+            options={[
+              { value: 'a', label: 'A', group: 'First' },
+              { value: 'b', label: 'B', group: 'First' },
+              { value: 'c', label: 'C', group: 'Second' },
+            ]}
+          />
+        )}
+      </Field>
+    );
+
+    const labels = Array.from(container.querySelectorAll('optgroup')).map((g) =>
+      g.getAttribute('label')
+    );
+    expect(labels).toEqual(['First', 'Second']);
+  });
+
+  it('reports the chosen value', () => {
+    const onChange = vi.fn();
+    render(
+      <Field label="Mode">
+        {(control) => (
+          <Select
+            {...control}
+            value="On"
+            onChange={onChange}
+            options={[
+              { value: 'On', label: 'On' },
+              { value: 'Off', label: 'Off' },
+            ]}
+          />
+        )}
+      </Field>
+    );
+
+    fireEvent.change(screen.getByLabelText('Mode'), { target: { value: 'Off' } });
+    expect(onChange).toHaveBeenCalledWith('Off');
+  });
+});
+
 describe('Button', () => {
   it('does not give a destructive action the loudest treatment', () => {
     // The finding: every ScheduleBuilder row ended in a filled red Delete, so a list of
@@ -247,6 +320,79 @@ describe('Badge', () => {
     // records, and the reason the ENABLED pill keeps its text.
     render(<Badge role="ok">Enabled</Badge>);
     expect(screen.getByText('Enabled')).toBeTruthy();
+  });
+});
+
+function TabsHarness() {
+  const [active, setActive] = useState('parameters');
+  return (
+    <Tabs
+      label="Routine sections"
+      active={active}
+      onChange={setActive}
+      tabs={[
+        { id: 'parameters', label: 'Parameters', badge: '1/8' },
+        { id: 'steps', label: 'Steps', badge: 3 },
+        { id: 'context', label: 'Context' },
+      ]}
+    >
+      <p>panel: {active}</p>
+    </Tabs>
+  );
+}
+
+describe('Tabs', () => {
+  it('is a tablist, not a row of buttons', () => {
+    // Finding 03: the routine editor's tab strip could not be driven from a keyboard,
+    // because four <button>s with click handlers is not a tab strip.
+    render(<TabsHarness />);
+
+    expect(screen.getByRole('tablist', { name: 'Routine sections' })).toBeTruthy();
+    expect(screen.getAllByRole('tab')).toHaveLength(3);
+    expect(screen.getByRole('tabpanel')).toBeTruthy();
+  });
+
+  it('is one tab stop, with a roving tabindex', () => {
+    // The strip should cost one Tab keystroke to skip, not three.
+    render(<TabsHarness />);
+
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs.map((t) => t.getAttribute('tabindex'))).toEqual(['0', '-1', '-1']);
+  });
+
+  it('moves between tabs with the arrow keys, and wraps', async () => {
+    render(<TabsHarness />);
+    const tabs = screen.getAllByRole('tab');
+
+    fireEvent.keyDown(tabs[0]!, { key: 'ArrowRight' });
+    await waitFor(() => expect(screen.getByText('panel: steps')).toBeTruthy());
+    expect(tabs[1]!.getAttribute('aria-selected')).toBe('true');
+
+    // Wrapping backwards from the first lands on the last.
+    fireEvent.keyDown(tabs[1]!, { key: 'ArrowLeft' });
+    await waitFor(() => expect(screen.getByText('panel: parameters')).toBeTruthy());
+    fireEvent.keyDown(tabs[0]!, { key: 'ArrowLeft' });
+    await waitFor(() => expect(screen.getByText('panel: context')).toBeTruthy());
+  });
+
+  it('jumps to the ends with Home and End', async () => {
+    render(<TabsHarness />);
+    const tabs = screen.getAllByRole('tab');
+
+    fireEvent.keyDown(tabs[0]!, { key: 'End' });
+    await waitFor(() => expect(screen.getByText('panel: context')).toBeTruthy());
+
+    fireEvent.keyDown(tabs[2]!, { key: 'Home' });
+    await waitFor(() => expect(screen.getByText('panel: parameters')).toBeTruthy());
+  });
+
+  it('points each tab at the panel it governs', () => {
+    render(<TabsHarness />);
+
+    const selected = screen.getByRole('tab', { selected: true });
+    const panel = screen.getByRole('tabpanel');
+    expect(selected.getAttribute('aria-controls')).toBe(panel.id);
+    expect(panel.getAttribute('aria-labelledby')).toBe(selected.id);
   });
 });
 

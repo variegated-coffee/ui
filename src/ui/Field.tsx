@@ -174,7 +174,37 @@ export interface TextInputProps extends ControlProps {
    * reformats it. Formatting stays on the display side, where this package can see it.
    */
   numeric?: boolean;
+  /**
+   * Monospace, without the numeric keypad.
+   *
+   * For a value that is read character by character but is not a number -- a base64 key
+   * being compared against another one. `numeric` would be the wrong tool: it asks a
+   * tablet for a decimal keypad, which cannot type a key.
+   */
+  mono?: boolean;
+  /**
+   * The input type, for the cases where it changes the browser's behaviour usefully:
+   * `password` masks, `url` and `email` pick a keyboard on a tablet.
+   *
+   * `number` is deliberately not in this union, and that is the whole point of the union
+   * existing rather than a free-form `type` prop -- it is what makes the rule above a
+   * compile error instead of a convention.
+   */
+  kind?: 'text' | 'password' | 'url' | 'email';
+  /** Turns off the browser's autofill, for a field holding a secret. */
+  autoComplete?: string;
+  spellcheck?: boolean;
   width?: string;
+  /**
+   * The id of a `<datalist>` to suggest from.
+   *
+   * Here because it is the one input attribute this package cannot express any other way:
+   * the timezone field suggests from the browser's IANA list, and without a way to pass
+   * this through, adopting `TextInput` would silently orphan the datalist and drop the
+   * suggestions.
+   */
+  list?: string;
+  maxLength?: number;
 }
 
 export function TextInput({
@@ -184,7 +214,13 @@ export function TextInput({
   placeholder,
   disabled = false,
   numeric = false,
+  mono = false,
+  kind = 'text',
+  autoComplete,
+  spellcheck,
   width,
+  list,
+  maxLength,
   ...control
 }: TextInputProps) {
   const { focusRing, handlers } = useInteractive();
@@ -192,7 +228,7 @@ export function TextInput({
   const style: JSX.CSSProperties = {
     width: width ?? '100%',
     padding: `0.4rem ${tokens.space.sm}`,
-    font: numeric ? `0.9rem ${tokens.font.mono}` : `0.9rem ${tokens.font.sans}`,
+    font: numeric || mono ? `0.9rem ${tokens.font.mono}` : `0.9rem ${tokens.font.sans}`,
     fontVariantNumeric: numeric ? 'tabular-nums' : undefined,
     color: tokens.color.ink,
     background: disabled ? tokens.color.surface : tokens.color.surfaceRaised,
@@ -205,10 +241,14 @@ export function TextInput({
   return (
     <input
       {...control}
-      type="text"
+      type={kind}
       inputMode={numeric ? 'decimal' : undefined}
       value={value}
       placeholder={placeholder}
+      list={list}
+      maxLength={maxLength}
+      autoComplete={autoComplete}
+      spellcheck={spellcheck}
       disabled={disabled}
       style={style}
       onInput={(e) => onInput(e.currentTarget.value)}

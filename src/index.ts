@@ -16,11 +16,17 @@ export type { ButtonProps, ButtonSize, ButtonVariant } from './ui/Button';
 export { Field, TextInput } from './ui/Field';
 export type { ControlProps, FieldProps, TextInputProps } from './ui/Field';
 
+export { Select } from './ui/Select';
+export type { SelectOption, SelectProps } from './ui/Select';
+
 export { Alert } from './ui/Alert';
 export type { AlertProps } from './ui/Alert';
 
 export { Badge } from './ui/Badge';
 export type { BadgeProps } from './ui/Badge';
+
+export { Tabs } from './ui/Tabs';
+export type { TabDefinition, TabsProps } from './ui/Tabs';
 
 export { Section } from './ui/Section';
 export type { SectionProps } from './ui/Section';
