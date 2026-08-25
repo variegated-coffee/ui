@@ -1,0 +1,45 @@
+name: Publish
+
+# Packages main into GitHub Packages. The version in package.json is the release
+# gate: pushes that don't bump it build and test, then stop short of publishing,
+# because the registry rejects a re-publish of an existing version outright.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://npm.pkg.github.com
+          scope: '@variegated-coffee'
+
+      - run: npm ci
+
+      # Run these as their own steps so a compile or test failure reports as
+      # itself, rather than surfacing later as an opaque publish failure.
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+
+      - name: Publish if the version is new
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if npm view "@variegated-coffee/ui@$version" version >/dev/null 2>&1; then
+            echo "@variegated-coffee/ui@$version is already published -- bump the version to release."
+          else
+            npm publish
+          fi
