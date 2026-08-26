@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { statusColors, tokens, type StatusRole } from '../tokens';
+import { statusColors, tokens, type StatusRole } from '../tokens.js';
 
 /**
  * A small piece of state attached to a thing, and a place to put capacity figures.

@@ -1,6 +1,6 @@
 import type { ComponentChildren, JSX } from 'preact';
-import { tokens } from '../tokens';
-import { focusRingStyle, useInteractive } from './useInteractive';
+import { tokens } from '../tokens.js';
+import { focusRingStyle, useInteractive } from './useInteractive.js';
 
 /**
  * Four weights, and the point of the set is that only one of them is loud.

@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useId, useState } from 'preact/hooks';
-import { tokens } from '../tokens';
-import { focusRingStyle, useInteractive } from './useInteractive';
+import { tokens } from '../tokens.js';
+import { focusRingStyle, useInteractive } from './useInteractive.js';
 
 /**
  * A titled region that collapses, with one affordance for doing so.

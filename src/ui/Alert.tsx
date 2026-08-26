@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact';
-import { statusColors, tokens, type StatusRole } from '../tokens';
-import { Button } from './Button';
+import { statusColors, tokens, type StatusRole } from '../tokens.js';
+import { Button } from './Button.js';
 
 /**
  * The component the missing token roles were being hand-rolled into.

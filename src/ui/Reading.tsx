@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { tokens } from '../tokens';
+import { tokens } from '../tokens.js';
 
 /**
  * A label and the number it names.

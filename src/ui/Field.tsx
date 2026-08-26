@@ -1,7 +1,7 @@
 import type { ComponentChildren, JSX } from 'preact';
 import { useId } from 'preact/hooks';
-import { tokens } from '../tokens';
-import { focusRingStyle, useInteractive } from './useInteractive';
+import { tokens } from '../tokens.js';
+import { focusRingStyle, useInteractive } from './useInteractive.js';
 
 /**
  * A labelled control, and the reason the label is not optional.

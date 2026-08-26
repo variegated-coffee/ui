@@ -1,5 +1,5 @@
-import { tokens } from '../tokens';
-import { Button } from './Button';
+import { tokens } from '../tokens.js';
+import { Button } from './Button.js';
 
 /**
  * What a panel says when it has nothing to show, put where it will actually be read.

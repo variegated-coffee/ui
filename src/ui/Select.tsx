@@ -1,7 +1,7 @@
 import type { JSX } from 'preact';
-import { tokens } from '../tokens';
-import type { ControlProps } from './Field';
-import { focusRingStyle, useInteractive } from './useInteractive';
+import { tokens } from '../tokens.js';
+import type { ControlProps } from './Field.js';
+import { focusRingStyle, useInteractive } from './useInteractive.js';
 
 /**
  * A `<select>` with the design system's border, radius and focus ring.

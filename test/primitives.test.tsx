@@ -1,17 +1,17 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/preact';
 import { describe, expect, it, vi } from 'vitest';
 import { useState } from 'preact/hooks';
-import { Alert } from '../src/ui/Alert';
-import { Badge } from '../src/ui/Badge';
-import { Button } from '../src/ui/Button';
-import { DialogHost, useDialogs } from '../src/ui/Dialog';
-import { EmptyState } from '../src/ui/EmptyState';
-import { Field, TextInput } from '../src/ui/Field';
-import { Reading } from '../src/ui/Reading';
-import { Section } from '../src/ui/Section';
-import { Select } from '../src/ui/Select';
-import { Tabs } from '../src/ui/Tabs';
-import { tokens } from '../src/tokens';
+import { Alert } from '../src/ui/Alert.js';
+import { Badge } from '../src/ui/Badge.js';
+import { Button } from '../src/ui/Button.js';
+import { DialogHost, useDialogs } from '../src/ui/Dialog.js';
+import { EmptyState } from '../src/ui/EmptyState.js';
+import { Field, TextInput } from '../src/ui/Field.js';
+import { Reading } from '../src/ui/Reading.js';
+import { Section } from '../src/ui/Section.js';
+import { Select } from '../src/ui/Select.js';
+import { Tabs } from '../src/ui/Tabs.js';
+import { tokens } from '../src/tokens.js';
 
 /*
  * These assert the audit's findings rather than the components' appearance.

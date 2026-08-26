@@ -1,8 +1,8 @@
 import { createContext } from 'preact';
 import type { ComponentChildren } from 'preact';
 import { useCallback, useContext, useEffect, useId, useRef, useState } from 'preact/hooks';
-import { tokens } from '../tokens';
-import { Button } from './Button';
+import { tokens } from '../tokens.js';
+import { Button } from './Button.js';
 
 /**
  * The modal shell, and the in-system replacement for `window.confirm` and `alert`.

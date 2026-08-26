@@ -1,8 +1,8 @@
 import type { ComponentChildren } from 'preact';
 import { useId, useRef } from 'preact/hooks';
-import { Badge } from './Badge';
-import { tokens } from '../tokens';
-import { focusRingStyle, useInteractive } from './useInteractive';
+import { Badge } from './Badge.js';
+import { tokens } from '../tokens.js';
+import { focusRingStyle, useInteractive } from './useInteractive.js';
 
 /**
  * A tab strip that can be driven from a keyboard.

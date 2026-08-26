@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contrastRatio, statusColors, tokens, type StatusRole } from '../src/tokens';
+import { contrastRatio, statusColors, tokens, type StatusRole } from '../src/tokens.js';
 
 describe('design tokens', () => {
   it('computes a known contrast ratio', () => {
