@@ -56,8 +56,29 @@ quietly go absent again:
 
 Neither consumer has a CSS pipeline, deliberately: these components have to drop into a
 firmware frontend that has none. Everything is inline style objects, hover and focus are
-tracked in JavaScript (`useInteractive`), and the tokens are not runtime-themeable. A dark
-mode would turn them into CSS custom properties and change both consumers.
+tracked in JavaScript (`useInteractive`), and the tokens are not runtime-themeable — making
+them CSS custom properties would change both consumers.
+
+## Two schemes, and what that does not mean
+
+There is a dark palette: `tokens.darkColor`, `tokens.darkPen` and `tokens.darkPhase`, with
+`themeFor(scheme)` to pick a set. It holds the same contrast contract as the light one, in
+a parallel suite in `test/tokens.test.ts`.
+
+It is **not** a dark mode for the primitives. They read their palette at module-init time
+and copy it into module-level style objects, so a component follows a scheme only once it
+is threaded one — which is a change at roughly a dozen call sites and has not been made.
+Adding the palette was the easy half; that is the half worth budgeting for.
+
+Two tokens exist only because the second scheme needs them, and are duplicates of existing
+values in light so a site can be written once and be right in both:
+
+- `accentInk` — `info` used as *text* rather than as a fill. One blue does both jobs in
+  light and cannot in dark, where a fill must stay dark enough for a white label while text
+  must be lighter than its surface.
+- `onFill` — the label on a filled accent or status block. White in **both** schemes.
+  Reaching for `surfaceRaised` here is the mistake that makes an inverted palette look
+  right until a filled button turns up.
 
 ## Contrast, from the command line
 
@@ -67,3 +88,10 @@ node measure-contrast.mjs '#721c24' '#f8d7da' '#155724' '#d4edda'
 
 Every ratio quoted in `src/tokens.ts` came from this. Use it before writing a new colour
 down, not after `npm test` rejects it.
+
+The dark pen ramp is derived rather than chosen, by running the light palette's own rule
+backwards. Re-run it after changing a light pen and paste the line it prints:
+
+```
+node derive-dark-pens.mjs
+```
