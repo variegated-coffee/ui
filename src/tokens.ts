@@ -276,7 +276,16 @@ export const tokens = {
     dangerBorder: '#52262a',
     dangerInk: '#f2a5ac', // 8.77:1 on dangerSurface, 8.21:1 on surfaceRaised
 
-    idle: '#8a857d',
+    /*
+     * 4.70:1 against `onFill`, and 3.41:1 on surfaceRaised.
+     *
+     * Both matter, because `idle` is a solid that carries a label -- the "didn't notice" key
+     * on the tasting sheet is a block of it. The first dark value tried was a lighter warm
+     * grey, on which neither a white label (3.66:1) nor a dark one (4.38:1) cleared 4.5, so
+     * it is darkened here until white does, which is the contract the light value already
+     * held at 4.69:1.
+     */
+    idle: '#797369',
 
     accentInk: '#6fb3ff', // 7.30:1 on surfaceRaised
     onFill: '#ffffff', // the same white as light -- see `color.onFill`

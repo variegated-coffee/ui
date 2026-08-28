@@ -318,4 +318,16 @@ describe('the dark scheme', () => {
     expect(dark.color.onFill).toBe(light.color.onFill);
     expect(dark.color.onFill).toBe('#ffffff');
   });
+
+  it('keeps `idle` able to carry a label in both schemes', () => {
+    // `idle` is not only a disabled tint -- the tasting sheet's "didn't notice" key is a
+    // filled block of it with a white label, in both schemes. So it is held to the text
+    // threshold against `onFill`, and to the graphical-object one against the surface, which
+    // is what pins it between being too light to read white on and too dark to see.
+    for (const scheme of [light, dark]) {
+      expect(contrastRatio(scheme.color.idle, scheme.color.onFill)).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(scheme.color.idle, scheme.color.surfaceRaised))
+        .toBeGreaterThanOrEqual(3);
+    }
+  });
 });
