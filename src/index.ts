@@ -54,3 +54,35 @@ export type { ConfirmRequest, DialogProps } from './ui/Dialog.js';
 
 export { useInteractive, focusRingStyle } from './ui/useInteractive.js';
 export type { Interactive } from './ui/useInteractive.js';
+
+/*
+ * The primitives the web refinement added.
+ *
+ * `Figure` is the one the others are built on: every measured number on every screen goes
+ * through it, which is what makes a column of them line up and a pending value look pending.
+ * `Reading` delegates to it rather than restating the treatment.
+ *
+ * Two names sit close to existing ones and neither collides today, but both are worth
+ * knowing about: `List` beside `CommandList`, and `Stepper` beside `StepEditor`/`StepTable`,
+ * which are about routine *steps* rather than about stepping a value.
+ */
+export { Figure } from './ui/Figure.js';
+export type { FigureProps } from './ui/Figure.js';
+
+export { Meter } from './ui/Meter.js';
+export type { MeterProps } from './ui/Meter.js';
+
+export { Stepper } from './ui/Stepper.js';
+export type { StepperProps } from './ui/Stepper.js';
+
+export { PageHeader } from './ui/PageHeader.js';
+export type { PageHeaderProps } from './ui/PageHeader.js';
+
+export { List, ListRow } from './ui/List.js';
+export type { ListProps, ListRowProps } from './ui/List.js';
+
+export { FilterBar } from './ui/FilterBar.js';
+export type { FilterBarProps, FilterSpec, ToggleSpec } from './ui/FilterBar.js';
+
+export { EntityPicker } from './ui/EntityPicker.js';
+export type { EntityPickerProps, PickerEntity } from './ui/EntityPicker.js';

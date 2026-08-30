@@ -70,7 +70,10 @@ function skinFor(variant: ButtonVariant, hot: boolean): Skin {
     case 'primary':
       return {
         background: hot ? tokens.color.infoStrong : tokens.color.info,
-        color: tokens.color.surfaceRaised,
+        // `onFill`, not `surfaceRaised`. They are the same white in light, which is why this
+        // went unnoticed -- but a surface flips to dark with the scheme and would take the
+        // label on a still-blue button with it. This is the exact case `onFill` was added for.
+        color: tokens.color.onFill,
         border: `1px solid ${hot ? tokens.color.infoStrong : tokens.color.info}`,
       };
     case 'secondary':
@@ -80,6 +83,15 @@ function skinFor(variant: ButtonVariant, hot: boolean): Skin {
         border: `1px solid ${tokens.color.border}`,
       };
     case 'quiet':
+      /*
+       * The refinement asks for `quiet` to lose its border entirely. Visually it already has:
+       * this one is transparent in both states, so nothing is drawn.
+       *
+       * Kept as `1px solid transparent` rather than `none` because it is doing metric work,
+       * not visual work. These sit in rows beside `secondary` buttons, which do have an edge,
+       * and dropping the declaration makes a quiet button 2px shorter and narrower than the
+       * one next to it -- the row stops lining up to fix a border nobody can see.
+       */
       return {
         background: hot ? tokens.color.surface : 'transparent',
         color: hot ? tokens.color.ink : tokens.color.inkMuted,
@@ -124,10 +136,18 @@ export function Button({
     gap: tokens.space.xs,
     padding: size === 'sm' ? `${tokens.space.xs} ${tokens.space.sm}` : '0.5rem 0.75rem',
     fontFamily: tokens.font.sans,
-    fontSize: size === 'sm' ? '0.8rem' : '0.9rem',
-    fontWeight: variant === 'primary' ? 500 : 400,
+    fontSize: size === 'sm' ? '0.8rem' : '14px',
+    /*
+     * 600 rather than 500 on a primary.
+     *
+     * The refinement's point is that importance was being carried by colour alone -- a page
+     * whose only loud thing is a filled blue rectangle. Weight is the other half of the
+     * signal, and it is the half that survives being looked at in greyscale.
+     */
+    fontWeight: variant === 'primary' ? 600 : 400,
     lineHeight: 1.2,
-    borderRadius: tokens.radius.sm,
+    // A control, not a card. `sm` at 4px read as a box with the corners knocked off.
+    borderRadius: tokens.radius.md,
     background: skin.background,
     color: skin.color,
     border: skin.border,
