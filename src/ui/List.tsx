@@ -127,6 +127,23 @@ export interface ListRowProps {
   href?: string;
   /** Required when `href` is set and `title` is not a plain string. */
   linkLabel?: string;
+  /**
+   * Handles activation of the row link, for an app with client-side routing.
+   *
+   * The `href` stays real regardless, so middle-click, open-in-new-tab and the status-bar
+   * preview keep working -- this is only for the plain left click. Call `preventDefault`
+   * yourself; the row does not, because whether a click should navigate in-page is the
+   * application's question rather than the list's.
+   */
+  onClick?: (event: MouseEvent) => void;
+  /**
+   * A tint across the whole row, for a kind of row rather than a state of one.
+   *
+   * Never the only signal. Every consumer of this pairs it with a word in the row, for the
+   * reason the pen palette gives: colours that all clear their contrast thresholds cannot
+   * also be far apart in luminance.
+   */
+  background?: string;
 }
 
 export function ListRow({
@@ -138,6 +155,8 @@ export function ListRow({
   menu,
   href,
   linkLabel,
+  onClick,
+  background,
 }: ListRowProps) {
   const { columns, dense } = useContext(ListContext);
 
@@ -153,12 +172,14 @@ export function ListRow({
         padding: `${tokens.space.sm} ${tokens.space.md}`,
         minHeight: dense ? tokens.layout.rowMin : tokens.layout.rowMinTwoLine,
         borderBottom: `0.5px solid ${tokens.color.hairline}`,
+        background,
       }}
     >
       {href && (
         <a
           href={href}
           aria-label={linkLabel ?? (typeof title === 'string' ? title : undefined)}
+          onClick={onClick}
           style={{
             position: 'absolute',
             inset: 0,

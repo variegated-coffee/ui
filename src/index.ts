@@ -82,7 +82,7 @@ export { List, ListRow } from './ui/List.js';
 export type { ListProps, ListRowProps } from './ui/List.js';
 
 export { FilterBar } from './ui/FilterBar.js';
-export type { FilterBarProps, FilterSpec, ToggleSpec } from './ui/FilterBar.js';
+export type { FilterBarProps, FilterOption, FilterSpec, ToggleSpec } from './ui/FilterBar.js';
 
 export { EntityPicker } from './ui/EntityPicker.js';
 export type { EntityPickerProps, PickerEntity } from './ui/EntityPicker.js';

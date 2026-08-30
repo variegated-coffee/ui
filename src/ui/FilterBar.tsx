@@ -18,19 +18,34 @@ import { tokens } from '../tokens.js';
  * itself has changed, which is the real signal; the edge is what makes it findable among
  * five.
  *
- * # It cycles rather than opening a menu
+ * # A native select wearing a pill
  *
- * Each pill advances to the next option on click, which is right for two or three options
- * and wrong for fifty. A filter with a long list wants a picker, and a caller with one
- * should reach for `EntityPicker` instead of passing forty options here.
+ * The design this comes from advances to the next option on click, which works for the three
+ * it was drawn with and not for the fifty bags a real library has. So each pill is a real
+ * `<select>` with its face styled: it opens the platform's own picker, types-to-search,
+ * works from a keyboard, and gets the native wheel on a phone -- none of which a hand-rolled
+ * menu would have without reimplementing all of it.
+ *
+ * The `<select>` is transparent and stretched across the pill rather than hidden, so the pill
+ * *is* the control. Hiding it and syncing a fake face is how a filter ends up announcing one
+ * value and applying another.
  */
+export interface FilterOption {
+  value: string;
+  label: string;
+}
+
 export interface FilterSpec {
   /** Stable key, used for the change callback. */
   key: string;
-  /** The options in cycle order. The first is the unset state. */
-  options: string[];
-  /** The current value. Must be one of `options`. */
+  /** What this filters, for a screen reader. The visible text is the current value. */
+  label: string;
+  /** The options. `unsetLabel` is prepended as the empty-string choice. */
+  options: FilterOption[];
+  /** The current value, or `''` for unset. */
   value: string;
+  /** What the pill reads when nothing is chosen -- "All machines", "Any beans". */
+  unsetLabel: string;
 }
 
 export interface ToggleSpec {
@@ -62,24 +77,52 @@ export function FilterBar({ filters, toggles, onChange, onToggle, label }: Filte
       }}
     >
       {filters.map((filter) => {
-        const set = filter.value !== filter.options[0];
+        const set = filter.value !== '';
+        const chosen = filter.options.find((option) => option.value === filter.value);
         return (
-          <button
+          <span
             key={filter.key}
-            type="button"
-            onClick={() => {
-              const at = filter.options.indexOf(filter.value);
-              onChange(filter.key, filter.options[(at + 1) % filter.options.length]!);
-            }}
             style={{
               ...pill,
+              position: 'relative',
               border: `1px solid ${set ? tokens.color.info : tokens.color.hairline}`,
               color: set ? tokens.color.ink : tokens.color.inkMuted,
               background: tokens.color.surfaceRaised,
             }}
           >
-            {filter.value}
-          </button>
+            {/* The face. `aria-hidden` because the select beside it already announces both
+                the label and the current value -- without this a screen reader reads the
+                value twice. */}
+            <span aria-hidden="true">{chosen?.label ?? filter.unsetLabel}</span>
+            <span aria-hidden="true" style={{ opacity: 0.5, fontSize: '10px' }}>
+              ▼
+            </span>
+            <select
+              aria-label={filter.label}
+              value={filter.value}
+              onChange={(event) => onChange(filter.key, (event.target as HTMLSelectElement).value)}
+              style={{
+                // Stretched over the pill and transparent, so the pill is the control rather
+                // than a picture of one.
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                opacity: 0,
+                cursor: 'pointer',
+                // 16px, or iOS Safari zooms the page in when the picker opens and does not
+                // zoom back out.
+                fontSize: '16px',
+              }}
+            >
+              <option value="">{filter.unsetLabel}</option>
+              {filter.options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </span>
         );
       })}
 
