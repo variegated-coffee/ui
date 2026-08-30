@@ -7,8 +7,15 @@
  * transpile TypeScript inside `node_modules` -- so this ships built JS with declarations
  * beside it.
  */
-export { tokens, statusColors, contrastRatio } from './tokens.js';
-export type { StatusRole } from './tokens.js';
+export {
+  tokens,
+  statusColors,
+  statusColorsFor,
+  themeFor,
+  tokensFor,
+  contrastRatio,
+} from './tokens.js';
+export type { StatusRole, StatusColor, ColorScheme, Theme } from './tokens.js';
 
 export { Button } from './ui/Button.js';
 export type { ButtonProps, ButtonSize, ButtonVariant } from './ui/Button.js';
