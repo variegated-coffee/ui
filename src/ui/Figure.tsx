@@ -70,6 +70,10 @@ export function Figure({
         display: 'inline-flex',
         alignItems: 'baseline',
         justifyContent: align === 'right' ? 'flex-end' : 'flex-start',
+        // Fills its cell when right-aligned, because otherwise there is nothing to align
+        // against: an inline-flex box is only as wide as its content, so `flex-end` inside it
+        // moves nothing. This is what makes a column of figures line up on the decimal point.
+        width: align === 'right' ? '100%' : undefined,
         gap: tokens.space.xs,
         whiteSpace: 'nowrap',
       }}

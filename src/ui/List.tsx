@@ -40,6 +40,14 @@ export interface ListProps {
   columns: string;
   /** Column labels, in order. Set in `eyebrow`; omit for a list that needs no header. */
   header?: string[];
+  /**
+   * Per-column alignment for the header labels, in the same order.
+   *
+   * A label has to sit over its column: `TIME` left-aligned above right-aligned durations
+   * reads as a different column from the one it names. Defaults to all-left, which is what
+   * a list of prose columns wants.
+   */
+  headerAlign?: ('left' | 'right')[];
   /** Single-line rows rather than two-line. See `tokens.layout`. */
   dense?: boolean;
   children: ComponentChildren;
@@ -47,7 +55,14 @@ export interface ListProps {
   label?: string;
 }
 
-export function List({ columns, header, dense = false, children, label }: ListProps) {
+export function List({
+  columns,
+  header,
+  headerAlign,
+  dense = false,
+  children,
+  label,
+}: ListProps) {
   return (
     <div
       role="list"
@@ -79,7 +94,7 @@ export function List({ columns, header, dense = false, children, label }: ListPr
               key={cell || index}
               // A blank label is a column that needs no name -- the menu column. Still
               // rendered, so the grid keeps its shape.
-              style={{ minWidth: 0 }}
+              style={{ minWidth: 0, textAlign: headerAlign?.[index] ?? 'left' }}
             >
               {cell}
             </span>
@@ -211,8 +226,17 @@ export function ListRow({
         )}
       </div>
 
+      {/*
+       * The cell places its content and does not align it.
+       *
+       * Alignment is a property of the *column*, and the column is the caller's -- it wrote
+       * the grid template. Forcing `flex-end` here meant a machine name and a duration had to
+       * share one answer, so a left-aligned label ended up hard against the numbers. A figure
+       * that wants to be right-aligned says so with `Figure align="right"`, which fills the
+       * cell to do it.
+       */}
       {figures?.map((figure, index) => (
-        <div key={index} style={{ display: 'flex', justifyContent: 'flex-end', minWidth: 0 }}>
+        <div key={index} style={{ display: 'flex', minWidth: 0 }}>
           {figure}
         </div>
       ))}
