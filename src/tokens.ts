@@ -15,8 +15,12 @@
  * its window. A token object is inlined at each use site and compresses exactly as today's
  * literals do.
  *
- * Not runtime-themeable, by choice. A dark mode would turn these into CSS custom
- * properties and change both consumers.
+ * Still not runtime-themeable, and still for the same reason: making these CSS custom
+ * properties would change both consumers, neither of which has a stylesheet to put them in.
+ * A dark scheme is therefore a second set of values under `darkColor` / `darkPen` /
+ * `darkPhase` rather than a theming mechanism -- `themeFor()` picks between them, and a
+ * consumer that never calls it renders exactly as it did before. `tokens.color` and its
+ * siblings are the light scheme and are unchanged.
  *
  * Every ratio quoted below was produced by `measure-contrast.mjs` at the repo root, and
  * `test/tokens.test.ts` is what keeps them true.
@@ -99,6 +103,29 @@ export const tokens = {
 
     /** Not a status. A control that is off, or a row that is disabled. */
     idle: '#6c757d', // 4.69:1 on surfaceRaised
+
+    /*
+     * Two roles that light mode does not need to name, because in light they are values it
+     * already has. They exist so the sites that use them can be written once and be correct
+     * in both schemes -- see `darkColor` for what each becomes.
+     */
+
+    /**
+     * `info` as *text* -- a link, a glyph, an accent label -- rather than as a fill.
+     *
+     * One blue does both jobs in light. It cannot in dark, where a fill has to stay dark
+     * enough for a white label while text has to be lighter than the surface behind it.
+     */
+    accentInk: '#0066cc', // identical to `info` here, by design
+
+    /**
+     * The label on a filled accent or status block.
+     *
+     * White in *both* schemes, which is why it is not `surfaceRaised`. Reaching for the
+     * surface token here is the mistake that makes an inverted palette look right until a
+     * filled button turns up: the surface flips to dark and takes the label with it.
+     */
+    onFill: '#ffffff',
   },
   space: {
     xs: '0.25rem',
@@ -195,7 +222,147 @@ export const tokens = {
     postFirstDrop: '#FAF1E2',
     unknown: '#F0F0F0',
   },
+
+  /**
+   * The dark scheme's surfaces, ink and status roles.
+   *
+   * Four rules, and they are worth stating because the values look arbitrary otherwise:
+   *
+   * 1. **Warm neutrals, not blue-black.** The light palette is warm -- `#f5f5f5` paper.
+   *    Inverting to a cool grey would make the two schemes look like different products,
+   *    so these carry the same slight warmth.
+   * 2. **Three surfaces, same order.** Sunken sits below raised sits below the page, in
+   *    dark as in light. Nothing inverts its stacking, which is what keeps a card legible
+   *    as a card without leaning on shadows.
+   * 3. **A status role is still four values, not a colour.** Each role's tint and hairline
+   *    drop to roughly 8% lightness and its ink rises until it clears 4.5:1 on both that
+   *    tint and the raised surface -- the same contract the light roles hold, so no
+   *    component logic changes.
+   * 4. **The accent splits in two.** `info` is the fill and `accentInk` is the text, which
+   *    in light are the same literal and here are not.
+   *
+   * `infoStrong` is the one value the iOS design this palette came from could not settle,
+   * because a phone has no hover. The invariant the light palette actually states is that
+   * the *label* gets more readable on hover, not that the fill gets lighter -- so this
+   * deepens, as light does. There is no room to go the other way: `info` already sits at
+   * 4.63:1 against the white label it carries, and any lightening drops it below 4.5.
+   */
+  darkColor: {
+    surface: '#191817',
+    surfaceRaised: '#232120',
+    surfaceSunken: '#121110',
+    border: '#3a3733',
+    ink: '#ebe8e2', // 13.11:1 on surfaceRaised, 15.42:1 on surfaceSunken
+    inkMuted: '#a29d93', // 5.94:1 on surfaceRaised, 6.99:1 on surfaceSunken
+
+    ok: '#4f9e64', // 4.89:1 on surfaceRaised
+    okSurface: '#16241a',
+    okBorder: '#2a4531',
+    okInk: '#8ed6a3', // 9.45:1 on okSurface, 9.39:1 on surfaceRaised
+
+    info: '#1f6feb', // 3.46:1 on surfaceRaised, 4.63:1 against onFill
+    infoStrong: '#1a56c4', // 6.62:1 against onFill, against info's own 4.63:1
+    infoSurface: '#14232e',
+    infoBorder: '#26485a',
+    infoInk: '#8ed0ec', // 9.46:1 on infoSurface, 9.45:1 on surfaceRaised
+
+    warn: '#c8912f', // 5.76:1 on surfaceRaised
+    warnSurface: '#2a2210',
+    warnBorder: '#4d4018',
+    warnInk: '#e6c672', // 9.50:1 on warnSurface, 9.68:1 on surfaceRaised
+
+    danger: '#c9484f', // 3.45:1 on surfaceRaised
+    dangerSurface: '#2c1517',
+    dangerBorder: '#52262a',
+    dangerInk: '#f2a5ac', // 8.77:1 on dangerSurface, 8.21:1 on surfaceRaised
+
+    /*
+     * 4.70:1 against `onFill`, and 3.41:1 on surfaceRaised.
+     *
+     * Both matter, because `idle` is a solid that carries a label -- the "didn't notice" key
+     * on the tasting sheet is a block of it. The first dark value tried was a lighter warm
+     * grey, on which neither a white label (3.66:1) nor a dark one (4.38:1) cleared 4.5, so
+     * it is darkened here until white does, which is the contract the light value already
+     * held at 4.69:1.
+     */
+    idle: '#797369',
+
+    accentInk: '#6fb3ff', // 7.30:1 on surfaceRaised
+    onFill: '#ffffff', // the same white as light -- see `color.onFill`
+  },
+
+  /**
+   * The dark trace colours.
+   *
+   * Derived, not chosen. `derive-dark-pens.mjs` at the repo root runs the light palette's
+   * own rule backwards -- hold the hue, keep as much saturation as lightening allows, raise
+   * lightness until the pen clears its threshold on `darkColor.surfaceRaised`, then stop --
+   * so the ramp keeps the luminance separation that made nine simultaneous traces readable.
+   * Re-run it after changing a light pen and paste the line it prints.
+   *
+   * The threshold is 4.5 rather than the 3:1 a graphical object needs, because a pen that
+   * merely passes on a dark ground reads as dim beside its light-mode self.
+   *
+   * Two things the light palette says about its pens survive the derivation unchanged,
+   * because holding the hue is what preserves them: `flowIn` is still the tightest case,
+   * amber being inherently pale in either direction, and the pens closest together in
+   * greyscale are still the closest together. So the rule stands -- nothing identifies a
+   * pen by colour alone.
+   */
+  darkPen: {
+    pressure: '#de6259', // 4.58:1 on darkColor.surfaceRaised
+    flowIn: '#d59115', // 6.02:1
+    flowOut: '#1ba9d0', // 5.83:1
+    weight: '#51a447', // 5.15:1
+    waterIn: '#6284e5', // 4.54:1
+    outputVolume: '#d254de', // 4.63:1
+    conductivity: '#7987cf', // 4.72:1
+    extractionRate: '#c66a9c', // 4.54:1
+    outputTemperature: '#31baa5', // 6.64:1
+    extractedSolids: '#908984', // 4.65:1
+    pumpDuty: '#748aa9', // 4.54:1
+    pumpRpm: '#d5c815', // 9.24:1
+    brewBoiler: '#e95b20', // 4.57:1
+    steamBoiler: '#a075e3', // 4.69:1
+  },
+
+  /**
+   * The dark phase bands, which invert the rule the pens follow.
+   *
+   * A pen has to clear its threshold to be seen; a band has to stay well under it or the
+   * traces drawn on top stop reading. So these are *not* lightened with the pens -- they
+   * are re-darkened to sit just above the plot ground, which is the same relationship the
+   * light bands have to white. 1.02:1 to 1.04:1 against `darkColor.surfaceRaised`.
+   */
+  darkPhase: {
+    headspaceFill: '#1b2530',
+    saturation: '#1a2620',
+    postFirstDrop: '#2a2418',
+    unknown: '#26241f',
+  },
 } as const;
+
+/** Which set of values `themeFor` hands back. */
+export type ColorScheme = 'light' | 'dark';
+
+/**
+ * The colour, pen and phase groups for one scheme.
+ *
+ * The two schemes carry the same keys, so a caller reads `theme.color.ink` without knowing
+ * which it was given. Nothing here reaches into `tokens.darkColor` directly except this
+ * function -- a component that wants to be scheme-aware takes a `ColorScheme` and calls
+ * this, and one that does not stays on `tokens.color` and remains light.
+ *
+ * Note what this deliberately is *not*: it does not retheme the primitives. They capture
+ * their palette at module-init time, so a component only follows a scheme once it is
+ * threaded one. That work is not done, and is why adding a dark palette is not by itself a
+ * dark mode for this package's consumers.
+ */
+export function themeFor(scheme: ColorScheme) {
+  return scheme === 'dark'
+    ? { color: tokens.darkColor, pen: tokens.darkPen, phase: tokens.darkPhase }
+    : { color: tokens.color, pen: tokens.pen, phase: tokens.phase };
+}
 
 /**
  * The four status roles, as a type, so a primitive can accept one without restating them.
