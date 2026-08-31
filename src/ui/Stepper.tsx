@@ -143,8 +143,18 @@ export function Stepper({
    * reimplementing that. Hidden because a stepper sits under a caller's own heading -- the
    * boiler card says "Target" once, above both of them.
    */
+  /*
+   * The unit is rendered here, not handed to `Field`.
+   *
+   * `Field` positions it `absolute; right: sm` against the box holding its children, which is
+   * exactly right when that box holds one input and exactly wrong here -- this one holds the
+   * input *and* both step buttons, so the unit landed on top of the `+`.
+   *
+   * It still gets said once to a screen reader, through the accessible label rather than
+   * after every keystroke of the value, which is the arrangement `Field` documents.
+   */
   return (
-    <Field label={label} hideLabel unit={unit}>
+    <Field label={unit ? `${label} (${unit})` : label} hideLabel>
       {(control) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: tokens.space.sm }}>
           <TextInput
@@ -173,6 +183,14 @@ export function Stepper({
               }
             }}
           />
+          {unit && (
+            <span
+              aria-hidden="true"
+              style={{ ...tokens.type.figure, color: tokens.color.inkMuted }}
+            >
+              {unit}
+            </span>
+          )}
           <div style={{ display: 'flex', gap: tokens.space.xs }}>
             <StepButton
               label={`Decrease ${label}`}

@@ -80,7 +80,9 @@ export function List({
           style={{
             display: 'grid',
             gridTemplateColumns: columns,
-            gap: tokens.space.sm,
+            // Wider than `sm`, because a right-aligned figure column sits hard against the
+            // left-aligned label of the next one -- `DOSE` and `TASTE` ended up touching.
+            gap: tokens.space.md,
             alignItems: 'center',
             padding: `${tokens.space.sm} ${tokens.space.md}`,
             background: tokens.color.fill,
@@ -182,7 +184,8 @@ export function ListRow({
         position: 'relative',
         display: 'grid',
         gridTemplateColumns: columns,
-        gap: tokens.space.sm,
+        // Matches the header's, or the labels stop sitting over their columns.
+        gap: tokens.space.md,
         alignItems: 'center',
         padding: `${tokens.space.sm} ${tokens.space.md}`,
         minHeight: dense ? tokens.layout.rowMin : tokens.layout.rowMinTwoLine,
