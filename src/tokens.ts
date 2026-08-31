@@ -25,6 +25,17 @@
  * Every ratio quoted below was produced by `measure-contrast.mjs` at the repo root, and
  * `test/tokens.test.ts` is what keeps them true.
  */
+/*
+ * The two stacks, hoisted out of `tokens.font` so `tokens.type` below can name them.
+ *
+ * An object literal cannot refer to itself while it is being built, and every type role
+ * carries a family -- so either these are consts or each role restates the stack.
+ */
+const SANS =
+  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, " +
+  'Cantarell, sans-serif';
+const MONO = "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace";
+
 export const tokens = {
   color: {
     surface: '#f5f5f5',
@@ -126,7 +137,54 @@ export const tokens = {
      * filled button turns up: the surface flips to dark and takes the label with it.
      */
     onFill: '#ffffff',
+
+    /**
+     * The label on a block filled with `ink`.
+     *
+     * Unlike `onFill` this one *does* flip, and that is the whole reason it is a token
+     * rather than another `#ffffff`. `ink` is near-black in light and near-white in dark,
+     * so a label on it has to go the other way in each -- writing white here and reusing it
+     * in dark would put white text on a `#ebe8e2` block.
+     */
+    onInk: '#ffffff',
+
+    /*
+     * Grouping lines, as distinct from edges.
+     *
+     * `border` is a solid `#dddddd` and is the single heaviest thing about the current
+     * screens: a card, an input, a table cell and a button all draw the same 1px, so twelve
+     * nested boxes shout equally and nothing reads as more clickable than anything else.
+     *
+     * The split is by job, not by weight:
+     *
+     *   hairline        divides rows *inside* one outline. Drawn at 0.5px, so grouped rows
+     *                   share a single edge instead of each being boxed one by one.
+     *   hairlineStrong  the edge of something you can click -- a bordered button, a picker.
+     *
+     * Ink at low alpha rather than a grey literal, because a grey is only correct over the
+     * one surface it was picked against. These composite correctly on a status tint too,
+     * which `#dddddd` does not.
+     */
+    hairline: 'rgba(60, 60, 67, 0.13)',
+    hairlineStrong: 'rgba(60, 60, 67, 0.22)',
+
+    /**
+     * A track, a meter groove, a hover state.
+     *
+     * `surfaceSunken` was doing this job and is the wrong shape for it: it is opaque
+     * `#f8f9fa`, so a groove drawn on a status tint punches a white hole in it. Alpha
+     * composites where an opaque value covers.
+     */
+    fill: 'rgba(60, 60, 67, 0.055)',
   },
+  /*
+   * The refinement asked for `xxs: 4px` and `xxl: 32px` here. Both already exist: `xs` is
+   * 0.25rem and `xl` is 2rem, which are those two sizes written in the unit this scale uses.
+   *
+   * Adding them would have given every row-internal gap and every page gutter two spellings,
+   * and adding them *in px* would additionally have dropped the rem scaling -- these track
+   * the reader's browser font size, and a hard 4px does not.
+   */
   space: {
     xs: '0.25rem',
     sm: '0.5rem',
@@ -137,16 +195,135 @@ export const tokens = {
   radius: {
     sm: '4px',
     md: '8px',
+    /** Cards. `sm`/`md` stop at 8px, which reads as a box rather than a card. */
+    lg: '14px',
+    /** Chips and pills. Large enough to always be a full semicircle at any row height. */
+    pill: '999px',
   },
   font: {
-    sans:
-      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, " +
-      'Cantarell, sans-serif',
+    sans: SANS,
     /**
      * Numeric readouts only, and for a functional reason rather than a stylistic one:
      * scrubbing a chart whose numbers change width as they update is unpleasant to read.
      */
-    mono: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace",
+    mono: MONO,
+  },
+
+  /**
+   * The eight things text is on these screens, named.
+   *
+   * Seven sizes were already in use across both frontends with no name, so every component
+   * hard-coded its own and no two pages agreed. Naming them is what makes the density a
+   * system decision rather than a per-page one.
+   *
+   * Two roles carry keys the other six do not, and both are functional rather than
+   * decorative:
+   *
+   * - `reading` and `figure` set `variantNumeric: 'tabular-nums'`, for the reason
+   *   `font.mono` exists at all -- a value whose digits change width while it updates is
+   *   unpleasant to read, and a column of them stops lining up at the decimal point.
+   * - `eyebrow` sets `textTransform`, because it is a label rather than a sentence and is
+   *   the one role whose casing is part of its identity.
+   *
+   * The keys are **CSS property names**, so a role spreads straight into a style object:
+   *
+   *   <div style={{ ...tokens.type.reading, color: tokens.color.ink }}>
+   *
+   * The refinement specified them as `{size, weight, lineHeight, letterSpacing, family}`.
+   * Renamed deliberately: everything in both frontends is an inline style object, and
+   * `style={{ ...role }}` with a key called `size` is a silent no-op -- it sets nothing and
+   * reports nothing. A shape that cannot be spread would be a shape nobody here can use.
+   */
+  type: {
+    /** A page title. The largest thing on any screen, and what says where you are. */
+    display: {
+      fontSize: '30px',
+      fontWeight: 600,
+      lineHeight: 1.16,
+      letterSpacing: '-0.85px',
+      fontFamily: SANS,
+    },
+    /** A card or section title. */
+    title: {
+      fontSize: '20px',
+      fontWeight: 600,
+      lineHeight: 1.25,
+      letterSpacing: '-0.4px',
+      fontFamily: SANS,
+    },
+    /** The first line of a list row -- the thing the row is about. */
+    row: {
+      fontSize: '15px',
+      fontWeight: 600,
+      lineHeight: 1.3,
+      letterSpacing: '-0.2px',
+      fontFamily: SANS,
+    },
+    /** Prose. */
+    body: {
+      fontSize: '14px',
+      fontWeight: 400,
+      lineHeight: 1.5,
+      letterSpacing: 'normal',
+      fontFamily: SANS,
+    },
+    /** A subtitle, a second line, an explanation under a heading. */
+    caption: {
+      fontSize: '13px',
+      fontWeight: 400,
+      lineHeight: 1.4,
+      letterSpacing: 'normal',
+      fontFamily: SANS,
+    },
+    /** A small capitalised label over a group. Mono, so it reads as a label, not a word. */
+    eyebrow: {
+      fontSize: '11px',
+      fontWeight: 400,
+      lineHeight: 1.4,
+      letterSpacing: '0.13em',
+      fontFamily: MONO,
+      textTransform: 'uppercase',
+    },
+    /** A headline measurement -- a boiler's current temperature. */
+    reading: {
+      fontSize: '30px',
+      fontWeight: 400,
+      lineHeight: '32px',
+      letterSpacing: '-1px',
+      fontFamily: MONO,
+      fontVariantNumeric: 'tabular-nums',
+    },
+    /** A measurement in a row or a metadata line. */
+    figure: {
+      fontSize: '13px',
+      fontWeight: 400,
+      lineHeight: 1.4,
+      letterSpacing: 'normal',
+      fontFamily: MONO,
+      fontVariantNumeric: 'tabular-nums',
+    },
+  },
+
+  /**
+   * Density, as numbers rather than as a habit.
+   *
+   * Leaving these per-page is why no two current pages agree on them: the shot table
+   * stretches to the window, so at 2200px the beans column ends up 900px from the duration
+   * it belongs to, and nothing tells the eye which row it is on.
+   *
+   * Numbers, not CSS strings, because several of these are arithmetic -- a row's height
+   * decides how many fit above the fold, and a gutter is subtracted from a width.
+   */
+  layout: {
+    /** Past this, a row is wider than the eye can track across. */
+    contentMax: 1120,
+    gutter: 32,
+    /** A single-line row. Comfortably past the 44px a fingertip needs. */
+    rowMin: 52,
+    /** A row with a title over a subtitle. */
+    rowMinTwoLine: 66,
+    /** The navigation bar. Chrome, so it is fixed and it is not tall. */
+    barHeight: 52,
   },
   /**
    * Trace colours, taking the sketch's hues but not its values.
@@ -289,6 +466,31 @@ export const tokens = {
 
     accentInk: '#6fb3ff', // 7.30:1 on surfaceRaised
     onFill: '#ffffff', // the same white as light -- see `color.onFill`
+
+    /**
+     * The one "on" colour that inverts.
+     *
+     * `ink` here is `#ebe8e2`, so a block filled with it is near-white and its label has to
+     * be dark. This is `surface` rather than pure black for the same reason the surfaces are
+     * warm: a true black label on a warm off-white reads colder than anything else in the
+     * scheme. 15.75:1 against `ink`.
+     */
+    onInk: '#191817',
+
+    /*
+     * The hairlines, inverted the only way they can be.
+     *
+     * Light draws them as ink at low alpha over a light ground. Reusing those values here
+     * would compose near-black over near-black and disappear -- so these are the *dark*
+     * scheme's ink at the same alphas, which is the same relationship the other way up.
+     *
+     * `hairline` at 0.13 over `surfaceRaised` lands within a shade of `border` (`#3a3733`),
+     * which is what says the two schemes are drawing the same line rather than two
+     * different ones that happen to both be subtle.
+     */
+    hairline: 'rgba(235, 232, 226, 0.13)',
+    hairlineStrong: 'rgba(235, 232, 226, 0.22)',
+    fill: 'rgba(235, 232, 226, 0.055)',
   },
 
   /**
@@ -359,9 +561,80 @@ export type ColorScheme = 'light' | 'dark';
  * dark mode for this package's consumers.
  */
 export function themeFor(scheme: ColorScheme) {
-  return scheme === 'dark'
-    ? { color: tokens.darkColor, pen: tokens.darkPen, phase: tokens.darkPhase }
-    : { color: tokens.color, pen: tokens.pen, phase: tokens.phase };
+  const { color, pen, phase } = tokensFor(scheme);
+  return { color, pen, phase };
+}
+
+/**
+ * Everything a component needs to draw itself in one scheme.
+ *
+ * A superset of {@link themeFor}, which now projects out of it. The scheme-invariant groups
+ * are carried along deliberately: a component that reaches for `theme.color.ink` almost
+ * always also wants `theme.space.md` and `theme.type.row` in the same style object, and
+ * making it import `tokens` separately for those is how half a style object ends up
+ * following the scheme and the other half not.
+ *
+ * # Why this exists
+ *
+ * The palette has had two schemes for a while and none of it reached the screen, because a
+ * dozen objects across four packages captured their colours at module-init:
+ *
+ *   export const statusColors = { ok: { solid: tokens.color.ok, ... } };  // frozen
+ *
+ * Those are *copies*. Mutating `tokens` rethemes nothing, and threading a scheme through the
+ * components is the only thing that ever could. Each of those captures now has an
+ * `xFor(scheme)` beside it, with the original name kept as the light-scheme call so no
+ * existing consumer changes.
+ *
+ * # Two invariants worth keeping
+ *
+ * **Referential identity.** `tokensFor('dark').color` *is* `tokens.darkColor`, not a copy of
+ * it. Spreading here would break the identity assertions in `test/tokens.test.ts` and, worse,
+ * would quietly decouple the two so a later edit to one stopped reaching the other.
+ *
+ * **Two results, built once.** `tokensFor('dark') === tokensFor('dark')`. The return value
+ * lands in `useMemo` dependency arrays and in style objects rebuilt per row; a fresh object
+ * per call turns every one of those into a guaranteed re-render.
+ */
+export interface Theme {
+  scheme: ColorScheme;
+  color: typeof tokens.color | typeof tokens.darkColor;
+  pen: typeof tokens.pen | typeof tokens.darkPen;
+  phase: typeof tokens.phase | typeof tokens.darkPhase;
+  space: typeof tokens.space;
+  radius: typeof tokens.radius;
+  font: typeof tokens.font;
+  type: typeof tokens.type;
+  layout: typeof tokens.layout;
+}
+
+const THEMES: Record<ColorScheme, Theme> = {
+  light: Object.freeze({
+    scheme: 'light',
+    color: tokens.color,
+    pen: tokens.pen,
+    phase: tokens.phase,
+    space: tokens.space,
+    radius: tokens.radius,
+    font: tokens.font,
+    type: tokens.type,
+    layout: tokens.layout,
+  }),
+  dark: Object.freeze({
+    scheme: 'dark',
+    color: tokens.darkColor,
+    pen: tokens.darkPen,
+    phase: tokens.darkPhase,
+    space: tokens.space,
+    radius: tokens.radius,
+    font: tokens.font,
+    type: tokens.type,
+    layout: tokens.layout,
+  }),
+};
+
+export function tokensFor(scheme: ColorScheme = 'light'): Theme {
+  return THEMES[scheme];
 }
 
 /**
@@ -376,35 +649,65 @@ export type StatusRole = 'ok' | 'info' | 'warn' | 'danger';
  * site, so a missing member is a type error rather than an `undefined` that renders as a
  * transparent background.
  */
-export const statusColors: Record<
-  StatusRole,
-  { solid: string; surface: string; border: string; ink: string }
-> = {
-  ok: {
-    solid: tokens.color.ok,
-    surface: tokens.color.okSurface,
-    border: tokens.color.okBorder,
-    ink: tokens.color.okInk,
-  },
-  info: {
-    solid: tokens.color.info,
-    surface: tokens.color.infoSurface,
-    border: tokens.color.infoBorder,
-    ink: tokens.color.infoInk,
-  },
-  warn: {
-    solid: tokens.color.warn,
-    surface: tokens.color.warnSurface,
-    border: tokens.color.warnBorder,
-    ink: tokens.color.warnInk,
-  },
-  danger: {
-    solid: tokens.color.danger,
-    surface: tokens.color.dangerSurface,
-    border: tokens.color.dangerBorder,
-    ink: tokens.color.dangerInk,
-  },
+export interface StatusColor {
+  solid: string;
+  surface: string;
+  border: string;
+  ink: string;
+}
+
+/**
+ * The four status roles in one scheme.
+ *
+ * This is the capture the whole scheme refactor turns on: `statusColors` below used to read
+ * `tokens.color.*` once, at module-init, and hand every consumer a copy. `Alert` and `Badge`
+ * read that copy, so both were light for good however the palette was set.
+ *
+ * Built per scheme and cached, so `statusColorsFor('dark') === statusColorsFor('dark')` for
+ * the reason {@link tokensFor} gives.
+ */
+const STATUS_COLORS: Record<ColorScheme, Record<StatusRole, StatusColor>> = {
+  light: buildStatusColors('light'),
+  dark: buildStatusColors('dark'),
 };
+
+function buildStatusColors(scheme: ColorScheme): Record<StatusRole, StatusColor> {
+  const { color } = tokensFor(scheme);
+  return Object.freeze({
+    ok: { solid: color.ok, surface: color.okSurface, border: color.okBorder, ink: color.okInk },
+    info: {
+      solid: color.info,
+      surface: color.infoSurface,
+      border: color.infoBorder,
+      ink: color.infoInk,
+    },
+    warn: {
+      solid: color.warn,
+      surface: color.warnSurface,
+      border: color.warnBorder,
+      ink: color.warnInk,
+    },
+    danger: {
+      solid: color.danger,
+      surface: color.dangerSurface,
+      border: color.dangerBorder,
+      ink: color.dangerInk,
+    },
+  });
+}
+
+export function statusColorsFor(scheme: ColorScheme = 'light'): Record<StatusRole, StatusColor> {
+  return STATUS_COLORS[scheme];
+}
+
+/**
+ * The light scheme's status roles.
+ *
+ * Kept under its original name, and kept exported, because every current consumer reads it
+ * and none of them knows about a scheme yet. Retiring the name would turn a no-op commit
+ * into a breaking change for two frontends at once.
+ */
+export const statusColors: Record<StatusRole, StatusColor> = statusColorsFor('light');
 
 /**
  * WCAG 2.1 relative contrast between two `#rrggbb` colours.

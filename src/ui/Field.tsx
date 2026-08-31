@@ -205,6 +205,17 @@ export interface TextInputProps extends ControlProps {
    */
   list?: string;
   maxLength?: number;
+  /**
+   * Raw key handling, for a control that has keyboard behaviour of its own.
+   *
+   * `Stepper` is the reason: a stepper is expected to answer the up and down arrows, and
+   * Enter has to commit rather than submit whatever form the field happens to sit in. Both
+   * are behaviours of the composed control rather than of a text box, so they belong to the
+   * caller -- but they cannot be reached without this.
+   *
+   * Prefer `onInput` and `onBlur` for anything about the *value*. This is for keys.
+   */
+  onKeyDown?: (event: KeyboardEvent) => void;
 }
 
 export function TextInput({
@@ -221,6 +232,7 @@ export function TextInput({
   width,
   list,
   maxLength,
+  onKeyDown,
   ...control
 }: TextInputProps) {
   const { focusRing, handlers } = useInteractive();
@@ -252,6 +264,7 @@ export function TextInput({
       disabled={disabled}
       style={style}
       onInput={(e) => onInput(e.currentTarget.value)}
+      onKeyDown={onKeyDown}
       {...handlers}
       onBlur={(e) => {
         handlers.onBlur();

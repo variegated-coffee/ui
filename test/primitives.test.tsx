@@ -7,7 +7,11 @@ import { Button } from '../src/ui/Button.js';
 import { DialogHost, useDialogs } from '../src/ui/Dialog.js';
 import { EmptyState } from '../src/ui/EmptyState.js';
 import { Field, TextInput } from '../src/ui/Field.js';
+import { Figure } from '../src/ui/Figure.js';
+import { List, ListRow } from '../src/ui/List.js';
+import { Meter } from '../src/ui/Meter.js';
 import { Reading } from '../src/ui/Reading.js';
+import { Stepper } from '../src/ui/Stepper.js';
 import { Section } from '../src/ui/Section.js';
 import { Select } from '../src/ui/Select.js';
 import { Tabs } from '../src/ui/Tabs.js';
@@ -451,19 +455,221 @@ describe('Reading', () => {
     // updates at 1 Hz through 99.9 -> 100.0 changes width in a proportional face and drags
     // the row with it.
     const { container } = render(<Reading label="Temperature" value="93.3" unit="°C" />);
-    const value = container.querySelectorAll('span')[1] as HTMLSpanElement;
+
+    // Found by what it is rather than by where it sits. `Reading` delegates its number to
+    // `Figure`, so a positional `querySelectorAll('span')[1]` asserted the old nesting as
+    // much as the font -- and would have to be renumbered every time either component grew
+    // a wrapper.
+    const tabular = Array.from(container.querySelectorAll('span')).filter(
+      (node) => node.style.fontVariantNumeric === 'tabular-nums'
+    );
+
+    // Exactly one, which is the delegation working: two would mean `Reading` had kept its
+    // own copy of the treatment alongside `Figure`'s.
+    expect(tabular).toHaveLength(1);
 
     // Quote-normalised: jsdom re-serialises the stack's `'SF Mono'` as `"SF Mono"`, so a
     // string equality here compares CSS serialisation rather than the font that was set.
     const normalise = (s: string) => s.replace(/["']/g, '');
-    expect(normalise(value.style.fontFamily)).toBe(normalise(tokens.font.mono));
-    expect(value.style.fontVariantNumeric).toBe('tabular-nums');
+    expect(normalise((tabular[0] as HTMLSpanElement).style.fontFamily)).toBe(
+      normalise(tokens.font.mono)
+    );
+    expect(tabular[0]!.textContent).toBe('93.3');
   });
 
   it('does not put a colon in the label', () => {
     // 74 labels ended in one. Two columns already say which side is which.
     const { container } = render(<Reading label="Output" value="35.0" unit="%" />);
     expect(container.textContent).not.toContain(':');
+  });
+});
+
+describe('Figure', () => {
+  it('keeps the unit out of the number', () => {
+    // `48.9 s` as one string right-aligns on the `s`, which puts the decimal points of a
+    // column in different places and defeats the whole reason for tabular figures.
+    const { container } = render(<Figure value="48.9" unit="s" />);
+    const tabular = Array.from(container.querySelectorAll('span')).filter(
+      (node) => node.style.fontVariantNumeric === 'tabular-nums'
+    );
+    expect(tabular).toHaveLength(1);
+    expect(tabular[0]!.textContent).toBe('48.9');
+  });
+
+  it('greys an unconfirmed value and says something is outstanding', () => {
+    // "Sent" is what a resolved request means; "set" is what the next status message means.
+    const { container } = render(<Figure value="93.0" unit="°C" pending />);
+    const tabular = container.querySelector('span[style*="tabular-nums"]') as HTMLSpanElement;
+    expect(tabular.style.color).toBe(rgb(tokens.color.idle));
+    expect(screen.getByRole('img', { name: /waiting for the machine/i })).toBeTruthy();
+  });
+
+  it('tells queued apart from pending', () => {
+    // Nothing is in flight to wait for on an unreachable machine, so a spinner would be
+    // saying something untrue. The word is the whole difference.
+    render(<Figure value="1.20" unit="bar" queued />);
+    expect(screen.getByText('queued')).toBeTruthy();
+    expect(screen.queryByRole('img', { name: /waiting for the machine/i })).toBeNull();
+  });
+
+  it('is settled by default', () => {
+    const { container } = render(<Figure value="20.0" unit="g" />);
+    const tabular = container.querySelector('span[style*="tabular-nums"]') as HTMLSpanElement;
+    expect(tabular.style.color).toBe(rgb(tokens.color.ink));
+  });
+});
+
+describe('Stepper', () => {
+  const setup = (props: Partial<Parameters<typeof Stepper>[0]> = {}) => {
+    const onCommit = vi.fn();
+    render(
+      <Stepper label="Target temperature" value={93} step={0.5} decimals={1} onCommit={onCommit} {...props} />
+    );
+    return { onCommit, input: screen.getByLabelText('Target temperature') as HTMLInputElement };
+  };
+
+  it('does not send a command per keystroke', () => {
+    // The bug this primitive exists to prevent: a field that sent on input would send four
+    // commands on the way from 9 to 93, one of which sets the boiler to 9 degrees.
+    const { onCommit, input } = setup();
+    for (const value of ['9', '9.', '9.4', '94']) {
+      fireEvent.input(input, { target: { value } });
+    }
+    expect(onCommit).not.toHaveBeenCalled();
+
+    fireEvent.blur(input, { target: { value: '94' } });
+    expect(onCommit).toHaveBeenCalledTimes(1);
+    expect(onCommit).toHaveBeenCalledWith(94);
+  });
+
+  it('commits on Enter, by way of blurring', () => {
+    const { onCommit, input } = setup();
+    fireEvent.input(input, { target: { value: '95' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.blur(input, { target: { value: '95' } });
+    expect(onCommit).toHaveBeenCalledWith(95);
+  });
+
+  it('says nothing when the value has not changed', () => {
+    // A boiler does not need to be told what it is already doing.
+    const { onCommit, input } = setup();
+    fireEvent.blur(input, { target: { value: '93.0' } });
+    expect(onCommit).not.toHaveBeenCalled();
+  });
+
+  it('keeps the last good value rather than substituting zero', () => {
+    // `parseFloat(x) || 0` on a setpoint turns a typo into a command that switches a boiler
+    // off, with the field showing `0` as though that had been the intent.
+    const { onCommit, input } = setup();
+    fireEvent.blur(input, { target: { value: 'ninety' } });
+    expect(onCommit).not.toHaveBeenCalled();
+  });
+
+  it('refuses an out-of-range entry rather than clamping it', () => {
+    // A clamp shows a number you did not ask for as though you had.
+    const { onCommit, input } = setup({ max: 125 });
+    fireEvent.blur(input, { target: { value: '130' } });
+    expect(onCommit).not.toHaveBeenCalled();
+  });
+
+  it('is never a number input', () => {
+    // `type="number"` is rendered and parsed in the *browser's* locale, so `1.4` shows as
+    // `1,4` beside a limit reading `100` and the same firmware value looks different on two
+    // machines in the same kitchen.
+    const { input } = setup();
+    expect(input.getAttribute('type')).not.toBe('number');
+    expect(input.inputMode).toBe('decimal');
+  });
+
+  it('steps by the step, without floating-point drift', () => {
+    // 1.20 + 0.05 is 1.2500000000000002 in binary floating point, and a setpoint that gains
+    // a digit per press is one nobody trusts.
+    const onCommit = vi.fn();
+    render(
+      <Stepper label="Target pressure" value={1.2} step={0.05} decimals={2} onCommit={onCommit} />
+    );
+    fireEvent.click(screen.getByLabelText('Increase Target pressure'));
+    expect(onCommit).toHaveBeenCalledWith(1.25);
+  });
+
+  it('answers the arrow keys, so it is usable without the buttons', () => {
+    const { onCommit, input } = setup();
+    fireEvent.keyDown(input, { key: 'ArrowUp' });
+    expect(onCommit).toHaveBeenCalledWith(93.5);
+  });
+
+  it('stops its buttons at the ends', () => {
+    // The buttons clamp where a typed entry is refused: a button that walks past a limit and
+    // then refuses itself is just a broken button.
+    const onCommit = vi.fn();
+    render(
+      <Stepper label="Target" value={125} step={0.5} max={125} decimals={1} onCommit={onCommit} />
+    );
+    expect((screen.getByLabelText('Increase Target') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('shows an unsettled value rather than a box to type in', () => {
+    // A spinner inside an input reads as a stuck field, and there is nothing useful to type
+    // until the machine has answered.
+    render(
+      <Stepper label="Target" value={93} step={0.5} decimals={1} onCommit={vi.fn()} pending />
+    );
+    expect(screen.queryByLabelText('Target')).toBeNull();
+    expect(screen.getByRole('img', { name: /waiting for the machine/i })).toBeTruthy();
+  });
+});
+
+describe('ListRow', () => {
+  const row = (menu?: preact.ComponentChildren) =>
+    render(
+      <List columns="1fr auto" label="Shots">
+        <ListRow title="Lever-like" subtitle="Hayb Chillwave" href="/s/abc" menu={menu} />
+      </List>
+    );
+
+  it('makes the whole row a link', () => {
+    const { container } = row();
+    const link = container.querySelector('a') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('/s/abc');
+    expect(link.getAttribute('aria-label')).toBe('Lever-like');
+  });
+
+  it('does not nest the row actions inside the row link', () => {
+    // A `<button>` inside an `<a>` is invalid HTML: browsers reparent it, and what a screen
+    // reader announces stops matching what is on screen. This is the whole reason the link
+    // is an overlay rather than a wrapper.
+    const { container } = row(<button type="button">Delete</button>);
+    const link = container.querySelector('a') as HTMLAnchorElement;
+    expect(link.querySelector('button')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeTruthy();
+  });
+
+  it('lifts the actions above the link so they can still be clicked', () => {
+    // Without this the overlay swallows the click and the menu never opens.
+    row(<button type="button">Delete</button>);
+    const holder = screen.getByRole('button', { name: 'Delete' }).parentElement!;
+    expect(holder.style.zIndex).toBe('1');
+  });
+
+  it('is a list to a screen reader', () => {
+    row();
+    expect(screen.getByRole('list', { name: 'Shots' })).toBeTruthy();
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+  });
+});
+
+describe('Meter', () => {
+  it('reports its proportion rather than only drawing it', () => {
+    render(<Meter value={0.18} label="Element duty" valueText="18 %" />);
+    const meter = screen.getByRole('meter', { name: 'Element duty' });
+    expect(meter.getAttribute('aria-valuenow')).toBe('18');
+    expect(meter.getAttribute('aria-valuetext')).toBe('18 %');
+  });
+
+  it('does not draw past its ends', () => {
+    // A duty cycle arriving as 1.02 is a rounding artefact, not a bar that overflows a card.
+    render(<Meter value={1.02} label="Duty" />);
+    expect(screen.getByRole('meter', { name: 'Duty' }).getAttribute('aria-valuenow')).toBe('100');
   });
 });
 

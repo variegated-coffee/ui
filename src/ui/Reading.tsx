@@ -1,5 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import { tokens } from '../tokens.js';
+import { Figure } from './Figure.js';
 
 /**
  * A label and the number it names.
@@ -37,38 +38,92 @@ export interface ReadingProps {
   /** Pre-formatted. This decides how it *looks*, never how many decimals it has. */
   value: string;
   unit?: string;
-  /** For nested detail -- the PID terms inside a boiler card. */
+  /**
+   * For nested detail -- the PID terms inside a boiler card.
+   *
+   * Affects the label and the spacing only. The figure itself takes its size from the type
+   * scale via `emphasis`, because "how big is this number" is a question about what the
+   * number *is*, not about how tightly the block around it is set.
+   */
   size?: 'md' | 'sm';
-  /** Draws the eye to the figure that is the point of the card. */
+  /**
+   * Draws the eye to the figure that is the point of the card.
+   *
+   * This is now the switch between the two figure roles: `figure` for a value in a list, and
+   * `reading` -- 30px mono -- for the headline a card exists to show, like a boiler's current
+   * temperature. Six call sites across both frontends set it, and they are exactly the six
+   * headline numbers.
+   */
   emphasis?: boolean;
+  /**
+   * A second line under the value -- what it is doing, or when it was last true.
+   *
+   * "pump idle" under a group pressure of `0.0`, "today 10:52 · Simply fast" under a shot
+   * duration. The number alone is often ambiguous about whether it is a measurement or an
+   * absence, and this is where that gets said rather than being inferred from a zero.
+   */
+  secondary?: string;
+  /** Sent, waiting for the machine's own reading to confirm it. */
+  pending?: boolean;
+  /** Sent to a machine that is not reachable. */
+  queued?: boolean;
 }
 
-export function Reading({ label, value, unit, size = 'md', emphasis = false }: ReadingProps) {
-  const scale = size === 'sm' ? '0.8rem' : '0.9rem';
-
+export function Reading({
+  label,
+  value,
+  unit,
+  size = 'md',
+  emphasis = false,
+  secondary,
+  pending = false,
+  queued = false,
+}: ReadingProps) {
   return (
     <div
       style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'baseline',
-        gap: tokens.space.sm,
-        fontSize: scale,
+        gap: size === 'sm' ? tokens.space.xs : tokens.space.sm,
       }}
     >
-      <span style={{ color: tokens.color.inkMuted, fontFamily: tokens.font.sans }}>{label}</span>
-      <span
-        style={{
-          fontFamily: tokens.font.mono,
-          fontVariantNumeric: 'tabular-nums',
-          fontWeight: emphasis ? 500 : 400,
-          color: tokens.color.ink,
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {value}
-        {unit && (
-          <span style={{ fontSize: '0.85em', color: tokens.color.inkMuted }}> {unit}</span>
+      {/*
+       * The label is an eyebrow rather than sentence-cased body text.
+       *
+       * It is naming a value, not saying something about it -- and at this size a mono
+       * capitalised label is told apart from the figure beside it at a glance, where two
+       * runs of sans at the same size have to be read to be separated.
+       */}
+      <span style={{ ...tokens.type.eyebrow, color: tokens.color.inkMuted }}>{label}</span>
+      <span style={{ textAlign: 'right' }}>
+        {/*
+         * The number itself is `Figure`'s, not this component's.
+         *
+         * It was the same mono-tabular-with-a-muted-unit treatment written out twice, and
+         * two copies is how the shot table and the machine cards came to disagree about
+         * where the unit goes. Delegating also means a `Reading` gets the pending and queued
+         * states for free rather than growing its own.
+         */}
+        <Figure
+          value={value}
+          unit={unit}
+          size={emphasis ? 'reading' : 'figure'}
+          align="right"
+          pending={pending}
+          queued={queued}
+        />
+        {secondary && (
+          <span
+            style={{
+              ...tokens.type.caption,
+              display: 'block',
+              color: tokens.color.inkMuted,
+              marginTop: '2px',
+            }}
+          >
+            {secondary}
+          </span>
         )}
       </span>
     </div>

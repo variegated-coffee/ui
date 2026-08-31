@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { contrastRatio, statusColors, themeFor, tokens, type StatusRole } from '../src/tokens.js';
+import {
+  contrastRatio,
+  statusColors,
+  statusColorsFor,
+  themeFor,
+  tokens,
+  tokensFor,
+  type StatusRole,
+} from '../src/tokens.js';
 
 describe('design tokens', () => {
   it('computes a known contrast ratio', () => {
@@ -329,5 +337,195 @@ describe('the dark scheme', () => {
       expect(contrastRatio(scheme.color.idle, scheme.color.surfaceRaised))
         .toBeGreaterThanOrEqual(3);
     }
+  });
+});
+
+describe('the type scale', () => {
+  const roles = [
+    'display', 'title', 'row', 'body', 'caption', 'eyebrow', 'reading', 'figure',
+  ] as const;
+
+  it('names every role the refinement decided', () => {
+    expect(Object.keys(tokens.type).sort()).toEqual([...roles].sort());
+  });
+
+  it('gives every role a complete, spreadable declaration', () => {
+    // The keys are CSS property names on purpose: everything in both frontends is an inline
+    // style object, and `style={{ ...role }}` with a key called `size` sets nothing and says
+    // nothing about it. A role missing a field fails the same way, silently, so every one of
+    // them is required to be complete rather than merely present.
+    for (const role of roles) {
+      const style = tokens.type[role];
+      expect(style.fontSize, role).toMatch(/^\d+(\.\d+)?px$/);
+      expect(typeof style.fontWeight, role).toBe('number');
+      expect(style.lineHeight, role).toBeDefined();
+      expect(style.letterSpacing, role).toBeDefined();
+      expect([tokens.font.sans, tokens.font.mono], role).toContain(style.fontFamily);
+    }
+  });
+
+  it('sets measured numbers in mono with tabular figures', () => {
+    // The reason `font.mono` exists at all: a value whose digits change width while it
+    // updates is unpleasant to read, and a column of them stops lining up at the decimal
+    // point. Both roles that carry a measurement are held to it.
+    for (const role of ['reading', 'figure'] as const) {
+      expect(tokens.type[role].fontFamily, role).toBe(tokens.font.mono);
+      expect(tokens.type[role].fontVariantNumeric, role).toBe('tabular-nums');
+    }
+  });
+
+  it('leaves prose alone', () => {
+    // Tabular figures in a sentence are worse than proportional ones. The rule is "numbers
+    // that change", not "numbers".
+    for (const role of ['display', 'title', 'row', 'body', 'caption'] as const) {
+      expect(tokens.type[role].fontFamily, role).toBe(tokens.font.sans);
+      expect(tokens.type[role], role).not.toHaveProperty('fontVariantNumeric');
+    }
+  });
+
+  it('makes the eyebrow a label rather than a word', () => {
+    expect(tokens.type.eyebrow.fontFamily).toBe(tokens.font.mono);
+    expect(tokens.type.eyebrow.textTransform).toBe('uppercase');
+    expect(tokens.type.eyebrow.letterSpacing).toBe('0.13em');
+  });
+
+  it('keeps the scale ordered, largest to smallest', () => {
+    // Not decoration: `display` has to out-rank `title` on every page, or the page title
+    // stops being the thing that says where you are.
+    const px = (role: (typeof roles)[number]) => parseFloat(tokens.type[role].fontSize);
+    expect(px('display')).toBeGreaterThan(px('title'));
+    expect(px('title')).toBeGreaterThan(px('row'));
+    expect(px('row')).toBeGreaterThan(px('body'));
+    expect(px('body')).toBeGreaterThan(px('caption'));
+    expect(px('caption')).toBeGreaterThan(px('eyebrow'));
+  });
+});
+
+describe('the hairlines and the fill', () => {
+  it('expresses them as ink at low alpha, in both schemes', () => {
+    // A grey literal is only correct over the one surface it was picked against. These have
+    // to sit on a status tint too, which `border`'s `#dddddd` does not.
+    for (const scheme of ['light', 'dark'] as const) {
+      const { color } = tokensFor(scheme);
+      for (const key of ['hairline', 'hairlineStrong', 'fill'] as const) {
+        expect(color[key], `${scheme}.${key}`).toMatch(/^rgba\(/);
+      }
+    }
+  });
+
+  it('keeps a grouping line lighter than an interactive edge', () => {
+    const alpha = (value: string) => parseFloat(value.split(',')[3]!);
+    for (const scheme of ['light', 'dark'] as const) {
+      const { color } = tokensFor(scheme);
+      expect(alpha(color.fill), scheme).toBeLessThan(alpha(color.hairline));
+      expect(alpha(color.hairline), scheme).toBeLessThan(alpha(color.hairlineStrong));
+    }
+  });
+
+  it('inverts the ink they are made of, rather than reusing the light values', () => {
+    // Light draws these as near-black over a light ground. Reusing those in dark would
+    // compose near-black over near-black and disappear.
+    expect(tokens.color.hairline).toContain('60, 60, 67');
+    expect(tokens.darkColor.hairline).toContain('235, 232, 226');
+  });
+
+  it('cannot be measured, and is never asked to be', () => {
+    // `contrastRatio` refuses anything that is not `#rrggbb` rather than guessing, so an
+    // alpha token reaching it is a thrown error rather than a plausible wrong number. This is
+    // here so the next person who writes a loop over `tokens.color` finds out at once.
+    expect(() => contrastRatio(tokens.color.hairline, tokens.color.surfaceRaised)).toThrow();
+    expect(() => contrastRatio(tokens.color.fill, tokens.color.surfaceRaised)).toThrow();
+  });
+
+  it('does not displace the opaque sunken surface', () => {
+    // Two different jobs that look like one. `surfaceSunken` is an opaque panel background --
+    // the box around a PID term. `fill` is the translucent overlay for a groove or a hover.
+    // Collapsing them puts a white hole in any groove drawn on a tint.
+    expect(tokens.color.surfaceSunken).toMatch(/^#/);
+    expect(tokens.color.fill).toMatch(/^rgba\(/);
+  });
+});
+
+describe('the label on an ink block', () => {
+  it('inverts between the schemes, unlike the label on a fill', () => {
+    // `onFill` is white in both, because a filled accent is dark in both. `onInk` cannot be:
+    // `ink` is near-black in light and near-white in dark, so its label has to go the other
+    // way in each. Writing white twice here is the bug this token exists to prevent.
+    expect(tokens.color.onInk).not.toBe(tokens.darkColor.onInk);
+    expect(tokens.color.onFill).toBe(tokens.darkColor.onFill);
+  });
+
+  it('stays readable on the ink it sits on, in both schemes', () => {
+    for (const scheme of ['light', 'dark'] as const) {
+      const { color } = tokensFor(scheme);
+      expect(contrastRatio(color.onInk, color.ink), scheme).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});
+
+describe('tokensFor', () => {
+  it('hands back the same groups themeFor does', () => {
+    for (const scheme of ['light', 'dark'] as const) {
+      expect(tokensFor(scheme).color).toBe(themeFor(scheme).color);
+      expect(tokensFor(scheme).pen).toBe(themeFor(scheme).pen);
+      expect(tokensFor(scheme).phase).toBe(themeFor(scheme).phase);
+    }
+  });
+
+  it('references the frozen groups rather than copying them', () => {
+    // Identity, not equality. A spread here would decouple the two, so a later edit to
+    // `tokens.darkColor` would stop reaching anything that reads a theme.
+    expect(tokensFor('dark').color).toBe(tokens.darkColor);
+    expect(tokensFor('dark').pen).toBe(tokens.darkPen);
+    expect(tokensFor('light').color).toBe(tokens.color);
+  });
+
+  it('carries the scheme-invariant groups too', () => {
+    // So a component gets its spacing and its type from the same call as its colours. Half a
+    // style object following the scheme and half not is the failure this prevents.
+    for (const scheme of ['light', 'dark'] as const) {
+      const theme = tokensFor(scheme);
+      expect(theme.space).toBe(tokens.space);
+      expect(theme.radius).toBe(tokens.radius);
+      expect(theme.type).toBe(tokens.type);
+      expect(theme.layout).toBe(tokens.layout);
+      expect(theme.scheme).toBe(scheme);
+    }
+  });
+
+  it('builds each scheme once', () => {
+    // This lands in `useMemo` deps and in style objects rebuilt per row. A fresh object per
+    // call makes every one of those a guaranteed re-render.
+    expect(tokensFor('dark')).toBe(tokensFor('dark'));
+    expect(tokensFor('light')).toBe(tokensFor('light'));
+  });
+
+  it('defaults to light, so an un-threaded caller renders as it always did', () => {
+    expect(tokensFor()).toBe(tokensFor('light'));
+  });
+});
+
+describe('statusColorsFor', () => {
+  it('keeps the old name meaning exactly what it meant', () => {
+    // The whole no-op guarantee of this change rests on this one assertion.
+    expect(statusColors).toEqual(statusColorsFor('light'));
+  });
+
+  it('reads the scheme it is asked for', () => {
+    const roles: StatusRole[] = ['ok', 'info', 'warn', 'danger'];
+    for (const role of roles) {
+      expect(statusColorsFor('dark')[role].solid, role).toBe(tokens.darkColor[role]);
+      expect(statusColorsFor('light')[role].solid, role).toBe(tokens.color[role]);
+    }
+  });
+
+  it('gives the two schemes genuinely different values', () => {
+    // The failure this catches is a capture that was converted in shape but still reads
+    // `tokens.color` inside -- which typechecks, passes a smoke test, and rethemes nothing.
+    expect(statusColorsFor('dark').ok.ink).not.toBe(statusColorsFor('light').ok.ink);
+  });
+
+  it('builds each scheme once', () => {
+    expect(statusColorsFor('dark')).toBe(statusColorsFor('dark'));
   });
 });
