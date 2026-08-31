@@ -1,6 +1,6 @@
 {
   "name": "@variegated-coffee/ui",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "type": "module",
   "description": "The Variegated design language -- tokens and the primitives built from them -- shared by the plantlet shot log and the machine's own frontend.",
   "license": "MIT",
