@@ -35,6 +35,13 @@ export interface PageHeaderProps {
   title: string;
   /** A small label above the title -- a roaster's name over a coffee's. */
   eyebrow?: string;
+  /**
+   * A state chip on the title's own line, reading as an adjective on the name.
+   *
+   * Distinct from `chips`, which are counts and quantities *about* the thing and sit in a row
+   * below it. This one is what the thing currently is.
+   */
+  badge?: ComponentChildren;
   /** One line saying what this page holds. Counts belong here, not in the title. */
   subtitle?: string;
   /** A line of figures under the subtitle -- "roasted 30 Jun · opened 29 Aug · 250 g". */
@@ -51,6 +58,7 @@ export interface PageHeaderProps {
 export function PageHeader({
   title,
   eyebrow,
+  badge,
   subtitle,
   meta,
   chips,
@@ -75,16 +83,26 @@ export function PageHeader({
           {eyebrow && (
             <div style={{ ...tokens.type.eyebrow, color: tokens.color.inkMuted }}>{eyebrow}</div>
           )}
-          <h1
-            style={{
-              ...tokens.type.display,
-              color: tokens.color.ink,
-              margin: eyebrow ? `${tokens.space.xs} 0 0` : 0,
-              textWrap: 'pretty',
-            }}
-          >
-            {title}
-          </h1>
+          {/*
+            The badge sits on the title's baseline, not under it.
+
+            A status chip is an adjective on the name -- "Variegated GS3, connected" -- and
+            putting it on its own line below the subtitle turns it into a separate statement
+            that has to be related back to the heading by the reader.
+          */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: tokens.space.sm, flexWrap: 'wrap' }}>
+            <h1
+              style={{
+                ...tokens.type.display,
+                color: tokens.color.ink,
+                margin: eyebrow ? `${tokens.space.xs} 0 0` : 0,
+                textWrap: 'pretty',
+              }}
+            >
+              {title}
+            </h1>
+            {badge}
+          </div>
           {subtitle && (
             <p
               style={{
